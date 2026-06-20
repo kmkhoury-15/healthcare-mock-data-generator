@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synthetic Healthcare Data Generator</title>
+  <meta name="description" content="Generate context-aware synthetic healthcare, clinical research, healthcare administration, and public health mock data from a data dictionary." />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --primary: #1f6f78;
+      --primary-dark: #174f57;
+      --secondary: #f29f05;
+      --accent: #0f766e;
+      --success-bg: #dcfce7;
+      --success-border: #22c55e;
+      --info-bg: #eff6ff;
+      --info-border: #3b82f6;
+      --warning-bg: #fff7ed;
+      --warning-border: #fb923c;
+      --danger-bg: #fef2f2;
+      --danger-border: #ef4444;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --text: #1f2937;
+      --muted: #64748b;
+      --border: #dbe3ef;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(31, 111, 120, 0.12), transparent 34rem),
+        radial-gradient(circle at top right, rgba(242, 159, 5, 0.13), transparent 28rem),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    .page {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 28px 18px 42px;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary), #123b43);
+      color: white;
+      border-radius: 24px;
+      padding: 34px;
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    header::after {
+      content: "";
+      position: absolute;
+      right: -70px;
+      top: -70px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    header h1 {
+      max-width: 880px;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      line-height: 1.05;
+      margin: 0 0 14px;
+    }
+
+    header p {
+      max-width: 920px;
+      margin: 0;
+      font-size: 1.08rem;
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .notice {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-left: 6px solid var(--warning-border);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .notice strong { display: block; margin-bottom: 3px; }
+    .notice .icon { font-size: 1.25rem; }
+    .notice p { margin: 0; color: #7c2d12; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(310px, 390px) 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      header { padding: 26px 22px; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel + .panel { margin-top: 18px; }
+
+    .panel h2 {
+      margin: 0 0 16px;
+      font-size: 1.12rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel h2 span {
+      width: 11px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--secondary);
+      display: inline-block;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-weight: 750;
+      margin-bottom: 7px;
+      color: #0f172a;
+    }
+
+    .hint {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    input[type="file"], input[type="number"], input[type="text"], input[type="date"], select, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.98rem;
+      padding: 12px 13px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(31, 111, 120, 0.12);
+      background: white;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 13px;
+      padding: 13px 14px;
+      font-weight: 800;
+      font-size: 0.98rem;
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.02); }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-secondary { background: var(--secondary); color: #111827; }
+    .btn-muted { background: #e2e8f0; color: #172033; }
+    .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+
+    .sample-buttons {
+      display: grid;
+      gap: 8px;
+    }
+
+    .status {
+      display: none;
+      padding: 14px 16px;
+      border-radius: 15px;
+      margin-bottom: 18px;
+      font-weight: 650;
+    }
+
+    .status.show { display: block; }
+    .status.success { background: var(--success-bg); border: 1px solid var(--success-border); color: #14532d; }
+    .status.info { background: var(--info-bg); border: 1px solid var(--info-border); color: #1e3a8a; }
+    .status.warning { background: var(--warning-bg); border: 1px solid var(--warning-border); color: #7c2d12; }
+    .status.error { background: var(--danger-bg); border: 1px solid var(--danger-border); color: #7f1d1d; }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 1050px) { .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 620px) { .stat-grid { grid-template-columns: 1fr; } }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .stat-card .label { color: var(--muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 1.65rem; font-weight: 850; margin-top: 4px; color: #0f172a; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      width: auto;
+      background: transparent;
+      border-radius: 12px 12px 0 0;
+      color: var(--muted);
+      padding: 12px 14px;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      color: var(--primary-dark);
+      border-bottom-color: var(--primary);
+      background: rgba(31, 111, 120, 0.07);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: auto;
+      background: white;
+      max-height: 560px;
+    }
+
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 100%;
+      font-size: 0.88rem;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #0f172a;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      text-align: left;
+      font-weight: 800;
+    }
+
+    tr:nth-child(even) td { background: #f8fafc; }
+    tr:last-child td { border-bottom: 0; }
+
+    .wide-cell { white-space: normal; min-width: 240px; color: var(--muted); }
+    .rule-cell { min-width: 300px; }
+    .strategy-select { min-width: 285px; padding: 9px 10px; font-size: 0.84rem; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 750;
+      font-size: 0.75rem;
+    }
+
+    .badge.green { background: #dcfce7; color: #166534; }
+    .badge.blue { background: #dbeafe; color: #1e40af; }
+    .badge.orange { background: #ffedd5; color: #9a3412; }
+
+    .empty {
+      padding: 38px;
+      text-align: center;
+      color: var(--muted);
+      background: white;
+    }
+
+    .summary-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-list li {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 11px 12px;
+    }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .small { font-size: 0.84rem; color: var(--muted); }
+
+    footer {
+      margin-top: 22px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.86rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="eyebrow">Synthetic only · Browser-based · GitHub Pages ready</div>
+      <h1>Synthetic Healthcare Data Generator</h1>
+      <p>Upload a data dictionary and generate realistic mock records for healthcare administration, clinical research, medical operations, and public health surveillance. The inference engine uses field names, comments, and data types to assign healthcare-specific mock-data rules.</p>
+    </header>
+
+    <section class="notice" aria-label="privacy and safety notice">
+      <div class="icon">⚠️</div>
+      <div>
+        <strong>Synthetic data only — do not upload real patient data or PHI.</strong>
+        <p>This tool is intended for mock data generation, development, demos, analytics testing, and training. Files are processed in the browser, but this app is not a legal HIPAA compliance product and should not be used with protected health information.</p>
+      </div>
+    </section>
+
+    <section class="layout">
+      <aside>
+        <div class="panel">
+          <h2><span></span>Configuration</h2>
+
+          <div class="form-group">
+            <label for="fileInput">Data dictionary file</label>
+            <input type="file" id="fileInput" accept=".csv,.json,.xls,.xlsx" />
+            <div class="hint">Accepted formats: CSV, JSON, XLS, XLSX. Expected columns include <span class="mono">name</span>, <span class="mono">comment</span>/<span class="mono">description</span>, and <span class="mono">type</span>.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="domainProfile">Mock data profile</label>
+            <select id="domainProfile">
+              <option value="healthcare_admin">Healthcare administration / operations</option>
+              <option value="clinical_research">Clinical research</option>
+              <option value="medical_professional">Clinical care / medical professional</option>
+              <option value="public_health">Public health surveillance</option>
+              <option value="mixed" selected>Mixed healthcare dataset</option>
+            </select>
+            <div class="hint">The profile changes defaults for diagnoses, departments, workflow fields, and note-style text.</div>
+          </div>
+
+          <div class="two-col">
+            <div class="form-group">
+              <label for="rowCountInput">Rows</label>
+              <input type="number" id="rowCountInput" value="100" min="1" max="10000" />
+            </div>
+            <div class="form-group">
+              <label for="seedInput">Seed</label>
+              <input type="text" id="seedInput" value="healthcare-demo" maxlength="80" />
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div class="form-group">
+              <label for="startDateInput">Start date</label>
+              <input type="date" id="startDateInput" value="2024-01-01" />
+            </div>
+            <div class="form-group">
+              <label for="endDateInput">End date</label>
+              <input type="date" id="endDateInput" value="2026-12-31" />
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button id="generateBtn" class="btn-primary" disabled>Generate Mock Data</button>
+            <button id="downloadCsvBtn" class="btn-secondary" disabled>Download CSV</button>
+            <button id="downloadJsonBtn" class="btn-secondary" disabled>Download JSON</button>
+            <button id="downloadXlsxBtn" class="btn-secondary" disabled>Download XLSX</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2><span></span>Built-in examples</h2>
+          <div class="sample-buttons">
+            <button class="btn-muted" data-sample="healthcare_admin">Load admin dictionary</button>
+            <button class="btn-muted" data-sample="clinical_research">Load research dictionary</button>
+            <button class="btn-muted" data-sample="medical_professional">Load clinical dictionary</button>
+            <button class="btn-muted" data-sample="public_health">Load public health dictionary</button>
+          </div>
+          <div class="hint">Use these to test the app before uploading your own schema.</div>
+        </div>
+
+        <div class="panel">
+          <h2><span></span>Field inference examples</h2>
+          <ul class="summary-list small">
+            <li><strong>Admin:</strong> payer, claim ID, CPT, length of stay, total charges, readmission, discharge disposition.</li>
+            <li><strong>Research:</strong> study arm, consent, enrollment, adverse event grade, protocol deviation, eligibility status.</li>
+            <li><strong>Clinical:</strong> MRN, encounter, diagnosis, medication, lab test, vital sign, provider, specialty.</li>
+            <li><strong>Public health:</strong> case status, pathogen, specimen, test result, vaccination status, jurisdiction, outbreak ID.</li>
+          </ul>
+        </div>
+      </aside>
+
+      <section>
+        <div id="statusBox" class="status"></div>
+
+        <div class="stat-grid">
+          <div class="stat-card"><div class="label">Schema fields</div><div id="fieldCountStat" class="value">0</div></div>
+          <div class="stat-card"><div class="label">Generated rows</div><div id="rowCountStat" class="value">0</div></div>
+          <div class="stat-card"><div class="label">Profile</div><div id="profileStat" class="value" style="font-size:1.05rem;">Mixed</div></div>
+          <div class="stat-card"><div class="label">Editable rules</div><div id="editableStat" class="value">0</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="tabs" role="tablist" aria-label="Data views">
+            <button class="tab-btn active" data-tab="schemaTab" type="button">Schema rules</button>
+            <button class="tab-btn" data-tab="previewTab" type="button">Generated preview</button>
+            <button class="tab-btn" data-tab="summaryTab" type="button">Generation summary</button>
+          </div>
+
+          <div id="schemaTab" class="tab-panel active">
+            <div class="table-wrap" id="schemaContainer">
+              <div class="empty">
+                <h3>No dictionary loaded yet</h3>
+                <p>Upload a dictionary file or load one of the built-in examples to begin.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="previewTab" class="tab-panel">
+            <div class="table-wrap" id="previewContainer">
+              <div class="empty">
+                <h3>No generated data yet</h3>
+                <p>Load a dictionary, review field rules, and click Generate Mock Data.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="summaryTab" class="tab-panel">
+            <div id="summaryContainer" class="empty">
+              <h3>No summary available yet</h3>
+              <p>A summary will appear after generation.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer>
+      Synthetic Healthcare Data Generator · Static HTML/CSS/JavaScript app · No backend required
+    </footer>
+  </main>
+
+<script>
+(() => {
+  "use strict";
+
+  let dataDictionary = [];
+  let generatedData = [];
+  let generationSummary = {};
+  let rng = Math.random;
+
+  const DOM = {
+    fileInput: document.getElementById("fileInput"),
+    domainProfile: document.getElementById("domainProfile"),
+    rowCountInput: document.getElementById("rowCountInput"),
+    seedInput: document.getElementById("seedInput"),
+    startDateInput: document.getElementById("startDateInput"),
+    endDateInput: document.getElementById("endDateInput"),
+    generateBtn: document.getElementById("generateBtn"),
+    downloadCsvBtn: document.getElementById("downloadCsvBtn"),
+    downloadJsonBtn: document.getElementById("downloadJsonBtn"),
+    downloadXlsxBtn: document.getElementById("downloadXlsxBtn"),
+    statusBox: document.getElementById("statusBox"),
+    schemaContainer: document.getElementById("schemaContainer"),
+    previewContainer: document.getElementById("previewContainer"),
+    summaryContainer: document.getElementById("summaryContainer"),
+    fieldCountStat: document.getElementById("fieldCountStat"),
+    rowCountStat: document.getElementById("rowCountStat"),
+    profileStat: document.getElementById("profileStat"),
+    editableStat: document.getElementById("editableStat")
+  };
+
+  const STRATEGY_OPTIONS = [
+    { value: "generic_text", label: "TEXT: Generic healthcare note" },
+    { value: "clinical_note", label: "TEXT: Clinical note / assessment" },
+    { value: "admin_note", label: "TEXT: Admin / operations note" },
+    { value: "research_note", label: "TEXT: Research note" },
+    { value: "patient_id", label: "ID: Synthetic patient ID" },
+    { value: "mrn", label: "ID: Synthetic MRN" },
+    { value: "encounter_id", label: "ID: Encounter / visit ID" },
+    { value: "claim_id", label: "ID: Claim / billing ID" },
+    { value: "provider_id", label: "ID: Provider / clinician ID" },
+    { value: "facility_id", label: "ID: Facility ID" },
+    { value: "study_id", label: "ID: Clinical study ID" },
+    { value: "participant_id", label: "ID: Research participant ID" },
+    { value: "case_id", label: "ID: Public health case ID" },
+    { value: "specimen_id", label: "ID: Lab specimen ID" },
+    { value: "outbreak_id", label: "ID: Outbreak / cluster ID" },
+    { value: "uuid", label: "ID: UUID" },
+    { value: "sequential_id", label: "ID: Sequential number" },
+    { value: "first_name", label: "PERSON: First name" },
+    { value: "last_name", label: "PERSON: Last name" },
+    { value: "full_name", label: "PERSON: Full name" },
+    { value: "patient_name", label: "PERSON: Patient full name" },
+    { value: "provider_name", label: "PERSON: Provider / clinician name" },
+    { value: "email", label: "CONTACT: Email" },
+    { value: "phone", label: "CONTACT: Phone" },
+    { value: "address", label: "GEOGRAPHY: Street address" },
+    { value: "city", label: "GEOGRAPHY: City" },
+    { value: "county", label: "GEOGRAPHY: County" },
+    { value: "state", label: "GEOGRAPHY: State" },
+    { value: "zip", label: "GEOGRAPHY: ZIP code" },
+    { value: "age", label: "DEMOGRAPHIC: Age" },
+    { value: "dob", label: "DEMOGRAPHIC: Date of birth" },
+    { value: "sex", label: "DEMOGRAPHIC: Sex assigned at birth" },
+    { value: "gender", label: "DEMOGRAPHIC: Gender identity" },
+    { value: "race", label: "DEMOGRAPHIC: Race" },
+    { value: "ethnicity", label: "DEMOGRAPHIC: Ethnicity" },
+    { value: "language", label: "DEMOGRAPHIC: Preferred language" },
+    { value: "payer", label: "ADMIN: Payer / insurance" },
+    { value: "plan_type", label: "ADMIN: Insurance plan type" },
+    { value: "claim_status", label: "ADMIN: Claim status" },
+    { value: "authorization_status", label: "ADMIN: Authorization status" },
+    { value: "appointment_status", label: "ADMIN: Appointment status" },
+    { value: "discharge_disposition", label: "ADMIN: Discharge disposition" },
+    { value: "encounter_type", label: "ADMIN: Encounter type" },
+    { value: "length_of_stay", label: "ADMIN: Length of stay" },
+    { value: "money", label: "ADMIN: Cost / charges / payment" },
+    { value: "quality_measure", label: "ADMIN: Quality measure" },
+    { value: "facility", label: "CARE: Facility / hospital" },
+    { value: "department", label: "CARE: Department / unit" },
+    { value: "service_line", label: "CARE: Service line" },
+    { value: "specialty", label: "CARE: Provider specialty" },
+    { value: "diagnosis_code", label: "CLINICAL: ICD-10 diagnosis code" },
+    { value: "diagnosis", label: "CLINICAL: Diagnosis description" },
+    { value: "procedure_code", label: "CLINICAL: CPT / procedure code" },
+    { value: "procedure", label: "CLINICAL: Procedure description" },
+    { value: "medication", label: "CLINICAL: Medication" },
+    { value: "medication_class", label: "CLINICAL: Medication class" },
+    { value: "rxnorm", label: "CLINICAL: RxNorm-like code" },
+    { value: "ndc", label: "CLINICAL: NDC-like code" },
+    { value: "lab_test", label: "CLINICAL: Lab test" },
+    { value: "loinc", label: "CLINICAL: LOINC-like code" },
+    { value: "lab_value", label: "CLINICAL: Lab numeric value" },
+    { value: "lab_unit", label: "CLINICAL: Lab unit" },
+    { value: "lab_result", label: "CLINICAL: Lab result / flag" },
+    { value: "vital_sign", label: "CLINICAL: Vital sign value" },
+    { value: "triage_acuity", label: "CLINICAL: Triage acuity" },
+    { value: "admission_date", label: "DATE: Admission date" },
+    { value: "discharge_date", label: "DATE: Discharge date" },
+    { value: "visit_date", label: "DATE: Visit / encounter date" },
+    { value: "collection_date", label: "DATE: Specimen collection date" },
+    { value: "report_date", label: "DATE: Report date" },
+    { value: "enrollment_date", label: "DATE: Research enrollment date" },
+    { value: "date", label: "DATE: General date" },
+    { value: "datetime", label: "DATE/TIME: Timestamp" },
+    { value: "time", label: "TIME: Clock time" },
+    { value: "study_arm", label: "RESEARCH: Study arm" },
+    { value: "consent_status", label: "RESEARCH: Consent status" },
+    { value: "eligibility_status", label: "RESEARCH: Eligibility status" },
+    { value: "adverse_event", label: "RESEARCH: Adverse event" },
+    { value: "ae_grade", label: "RESEARCH: Adverse event grade" },
+    { value: "protocol_deviation", label: "RESEARCH: Protocol deviation" },
+    { value: "irb_status", label: "RESEARCH: IRB status" },
+    { value: "pathogen", label: "PUBLIC HEALTH: Pathogen / organism" },
+    { value: "disease", label: "PUBLIC HEALTH: Reportable condition" },
+    { value: "case_status", label: "PUBLIC HEALTH: Case classification" },
+    { value: "specimen_type", label: "PUBLIC HEALTH: Specimen type" },
+    { value: "test_result", label: "PUBLIC HEALTH: Test result" },
+    { value: "vaccination_status", label: "PUBLIC HEALTH: Vaccination status" },
+    { value: "jurisdiction", label: "PUBLIC HEALTH: Jurisdiction" },
+    { value: "public_health_action", label: "PUBLIC HEALTH: Action / intervention" },
+    { value: "boolean", label: "PRIMITIVE: Boolean / flag" },
+    { value: "numeric", label: "PRIMITIVE: Numeric value" },
+    { value: "percentage", label: "PRIMITIVE: Percentage" },
+    { value: "categorical", label: "CUSTOM: Categorical options" },
+    { value: "placeholder", label: "FALLBACK: Synthetic placeholder" }
+  ];
+
+  const POOL = {
+    firstNames: ["James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", "William", "Elizabeth", "David", "Barbara", "Richard", "Susan", "Joseph", "Jessica", "Thomas", "Sarah", "Charles", "Karen", "Aisha", "Omar", "Maya", "Noah", "Leah", "Diego", "Sofia", "Fatima", "Ethan", "Nora"],
+    lastNames: ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Patel", "Nguyen", "Khan", "Chen", "Kim", "Ali", "Cohen", "Singh"],
+    domains: ["example.org", "samplehealth.org", "demo-hospital.net", "synthetic-clinic.edu", "mock-research.org"],
+    streets: ["Main St", "Oak Ave", "Pine Rd", "Maple Dr", "Cedar Ln", "Elm St", "Central Ave", "Care Way", "Medical Plaza", "Research Blvd"],
+    cities: ["Phoenix", "Tucson", "Flagstaff", "Mesa", "Tempe", "Chicago", "Houston", "Boston", "Denver", "San Diego", "Atlanta", "Seattle"],
+    counties: ["Maricopa", "Pima", "Coconino", "Pinal", "Yavapai", "Cook", "Harris", "Suffolk", "Denver", "King"],
+    states: ["AZ", "CA", "CO", "TX", "IL", "MA", "GA", "WA", "NY", "PA"],
+    race: ["American Indian or Alaska Native", "Asian", "Black or African American", "Native Hawaiian or Other Pacific Islander", "White", "Two or More Races", "Unknown", "Declined to answer"],
+    ethnicity: ["Hispanic or Latino", "Not Hispanic or Latino", "Unknown", "Declined to answer"],
+    sex: ["Female", "Male", "Intersex", "Unknown"],
+    gender: ["Woman", "Man", "Nonbinary", "Another gender identity", "Unknown", "Declined to answer"],
+    language: ["English", "Spanish", "Arabic", "Navajo", "Mandarin", "Vietnamese", "French", "Tagalog"],
+    payers: ["Medicare", "Medicaid", "Commercial", "Self-pay", "Workers Compensation", "Tricare", "Veterans Affairs"],
+    planTypes: ["HMO", "PPO", "EPO", "POS", "High Deductible Health Plan", "Dual Eligible", "Fee-for-Service"],
+    claimStatuses: ["Submitted", "Accepted", "Denied", "Pending review", "Paid", "Adjusted", "Appealed"],
+    authStatuses: ["Not required", "Pending", "Approved", "Denied", "Expired", "Peer-to-peer requested"],
+    appointmentStatuses: ["Scheduled", "Completed", "No-show", "Cancelled by patient", "Cancelled by clinic", "Rescheduled", "Checked in"],
+    dischargeDispositions: ["Home or self care", "Home health services", "Skilled nursing facility", "Short-term hospital", "Rehabilitation facility", "Against medical advice", "Expired", "Hospice"],
+    encounterTypes: ["Emergency", "Inpatient", "Outpatient", "Observation", "Telehealth", "Urgent care", "Ambulatory surgery", "Preventive visit"],
+    qualityMeasures: ["30-day readmission", "Average length of stay", "Medication reconciliation", "Sepsis bundle compliance", "Patient experience score", "Fall risk screening", "HbA1c control", "Blood pressure control", "Follow-up after discharge"],
+    facilities: ["Valley Regional Medical Center", "North Canyon Hospital", "Desert Springs Clinic", "University Health Pavilion", "Community Care Center", "Sunrise Children's Hospital", "Metro Specialty Hospital", "Riverside Ambulatory Center"],
+    departments: ["Emergency Department", "General Medicine", "Intensive Care Unit", "Pediatrics", "Cardiology", "Oncology", "Neurology", "Orthopedics", "Obstetrics", "Radiology", "Laboratory", "Infection Prevention"],
+    serviceLines: ["Primary Care", "Medical-Surgical", "Behavioral Health", "Maternal Child Health", "Cardiovascular", "Oncology", "Population Health", "Pharmacy", "Care Management"],
+    specialties: ["Family Medicine", "Internal Medicine", "Emergency Medicine", "Pediatrics", "Cardiology", "Infectious Disease", "Pulmonology", "Neurology", "Oncology", "Surgery", "Nursing", "Clinical Pharmacy"],
+    providerNames: ["Dr. J. Smith, MD", "Dr. A. Jones, DO", "Dr. L. Taylor, MD", "Dr. R. Garcia, MD", "Dr. M. Patel, MD", "N. Williams, RN", "S. Nguyen, PharmD", "A. Chen, NP", "K. Davis, PA-C"],
+    diagnoses: [
+      { code: "I10", text: "Essential hypertension" },
+      { code: "E11.9", text: "Type 2 diabetes mellitus without complications" },
+      { code: "J45.909", text: "Asthma, uncomplicated" },
+      { code: "E78.5", text: "Hyperlipidemia" },
+      { code: "N39.0", text: "Urinary tract infection" },
+      { code: "J18.9", text: "Pneumonia, unspecified organism" },
+      { code: "I50.9", text: "Heart failure, unspecified" },
+      { code: "A41.9", text: "Sepsis, unspecified organism" },
+      { code: "F32.9", text: "Major depressive disorder, single episode" },
+      { code: "M17.9", text: "Osteoarthritis of knee" }
+    ],
+    procedures: [
+      { code: "99213", text: "Office outpatient established visit" },
+      { code: "99214", text: "Office outpatient established visit, moderate" },
+      { code: "93000", text: "Electrocardiogram" },
+      { code: "80053", text: "Comprehensive metabolic panel" },
+      { code: "85025", text: "Complete blood count with differential" },
+      { code: "36415", text: "Routine venipuncture" },
+      { code: "71046", text: "Chest radiograph, two views" },
+      { code: "99495", text: "Transitional care management" }
+    ],
+    medications: [
+      { name: "Metformin", klass: "Antidiabetic", rxnorm: "860975", ndc: "00093-1049-01" },
+      { name: "Lisinopril", klass: "ACE inhibitor", rxnorm: "29046", ndc: "68180-0513-01" },
+      { name: "Atorvastatin", klass: "Statin", rxnorm: "83367", ndc: "60505-2578-08" },
+      { name: "Amlodipine", klass: "Calcium channel blocker", rxnorm: "17767", ndc: "68180-0721-01" },
+      { name: "Albuterol", klass: "Bronchodilator", rxnorm: "435", ndc: "00085-1132-01" },
+      { name: "Levothyroxine", klass: "Thyroid hormone", rxnorm: "10582", ndc: "00074-3724-90" },
+      { name: "Omeprazole", klass: "Proton pump inhibitor", rxnorm: "7646", ndc: "0378-6150-01" },
+      { name: "Ceftriaxone", klass: "Cephalosporin antibiotic", rxnorm: "2193", ndc: "0409-7338-01" }
+    ],
+    labTests: [
+      { name: "Hemoglobin A1c", loinc: "4548-4", unit: "%", min: 4.8, max: 10.8, decimals: 1 },
+      { name: "Creatinine", loinc: "2160-0", unit: "mg/dL", min: 0.5, max: 2.3, decimals: 2 },
+      { name: "White blood cell count", loinc: "6690-2", unit: "10^3/uL", min: 3.0, max: 18.0, decimals: 1 },
+      { name: "Hemoglobin", loinc: "718-7", unit: "g/dL", min: 8.5, max: 17.5, decimals: 1 },
+      { name: "Platelet count", loinc: "777-3", unit: "10^3/uL", min: 90, max: 520, decimals: 0 },
+      { name: "SARS-CoV-2 PCR", loinc: "94500-6", unit: "result", min: 0, max: 0, decimals: 0 },
+      { name: "Influenza A PCR", loinc: "34487-9", unit: "result", min: 0, max: 0, decimals: 0 }
+    ],
+    labResults: ["Normal", "Abnormal", "Critical", "Positive", "Negative", "Detected", "Not detected", "Indeterminate", "Pending"],
+    triage: ["Level 1 - Resuscitation", "Level 2 - Emergent", "Level 3 - Urgent", "Level 4 - Less urgent", "Level 5 - Nonurgent"],
+    studyArms: ["Control", "Intervention A", "Intervention B", "Standard of care", "Dose escalation", "Placebo", "Observational cohort"],
+    consentStatuses: ["Consented", "Declined", "Pending", "Withdrawn", "Re-consent required"],
+    eligibilityStatuses: ["Eligible", "Not eligible", "Screen failed", "Pending review", "Enrolled"],
+    adverseEvents: ["None reported", "Nausea", "Headache", "Fatigue", "Injection site reaction", "Dizziness", "Rash", "Serious adverse event under review"],
+    aeGrades: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Not applicable"],
+    protocolDeviations: ["None", "Missed visit window", "Incomplete lab panel", "Medication nonadherence", "Eligibility waiver documented", "Late case report form"],
+    irbStatuses: ["Approved", "Exempt", "Expedited review", "Full board review", "Continuing review due", "Closed"],
+    pathogens: ["SARS-CoV-2", "Influenza A", "Influenza B", "RSV", "Salmonella enterica", "Campylobacter jejuni", "Klebsiella pneumoniae", "Candida auris", "Mycobacterium tuberculosis complex", "Measles virus", "West Nile virus"],
+    diseases: ["COVID-19", "Influenza", "RSV infection", "Salmonellosis", "Campylobacteriosis", "Carbapenem-resistant Enterobacterales", "Candida auris", "Tuberculosis", "Measles", "West Nile virus disease"],
+    caseStatuses: ["Confirmed", "Probable", "Suspect", "Not a case", "Under investigation", "Epi-linked"],
+    specimenTypes: ["Nasopharyngeal swab", "Blood", "Urine", "Sputum", "Stool", "Wound swab", "Wastewater composite", "Serum", "CSF", "Isolate"],
+    testResults: ["Positive", "Negative", "Detected", "Not detected", "Indeterminate", "Pending", "Inconclusive"],
+    vaccinationStatuses: ["Up to date", "Partially vaccinated", "Unvaccinated", "Unknown", "Not eligible", "Declined"],
+    publicHealthActions: ["Case interview completed", "Isolation guidance provided", "Contact tracing initiated", "Specimen requested", "Facility notified", "Outbreak investigation opened", "No additional action", "Vaccination recommended"],
+    clinicalNotes: ["Assessment reviewed with care team; follow-up plan documented.", "Symptoms improving; continue current treatment plan.", "Lab results reviewed and communicated through patient portal.", "Medication reconciliation completed during encounter.", "Care coordination referral placed for follow-up needs.", "Patient education provided using standard clinical materials."],
+    adminNotes: ["Prior authorization submitted for payer review.", "Claim routed to revenue cycle queue for follow-up.", "Discharge planning completed with care management team.", "Appointment reminder sent through standard outreach workflow.", "Quality measure reviewed for monthly operations dashboard.", "Denial reason documented for billing audit."],
+    researchNotes: ["Participant completed scheduled study visit.", "Eligibility checklist reviewed by study coordinator.", "Adverse event assessment completed and filed.", "Protocol visit window verified against enrollment date.", "Source documentation reviewed for monitoring.", "Consent form status verified before procedure."],
+    genericNotes: ["Record generated for synthetic testing workflow.", "Mock value created from dictionary context.", "Synthetic entry ready for validation testing.", "Generated for demo analytics and dashboard development.", "Placeholder record reviewed for schema compatibility."]
+  };
+
+  const SAMPLE_DICTIONARIES = {
+    healthcare_admin: [
+      { name: "patient_id", type: "string", comment: "Synthetic patient identifier" },
+      { name: "encounter_id", type: "string", comment: "Visit or encounter identifier" },
+      { name: "facility_name", type: "string", comment: "Hospital or clinic name" },
+      { name: "department", type: "string", comment: "Department or operational unit" },
+      { name: "encounter_type", type: "string", comment: "Emergency, inpatient, outpatient, telehealth, or urgent care" },
+      { name: "admission_date", type: "date", comment: "Hospital admission date" },
+      { name: "discharge_date", type: "date", comment: "Hospital discharge date" },
+      { name: "length_of_stay", type: "integer", comment: "Inpatient length of stay in days" },
+      { name: "payer", type: "string", comment: "Insurance payer" },
+      { name: "plan_type", type: "string", comment: "Insurance plan type" },
+      { name: "claim_id", type: "string", comment: "Billing claim identifier" },
+      { name: "claim_status", type: "string", comment: "Current claim workflow status" },
+      { name: "total_charges", type: "decimal", comment: "Total charges in US dollars" },
+      { name: "allowed_amount", type: "decimal", comment: "Allowed amount in US dollars" },
+      { name: "readmission_30d_flag", type: "boolean", comment: "Yes/no flag for 30-day readmission" },
+      { name: "quality_measure", type: "string", comment: "Operational quality metric" }
+    ],
+    clinical_research: [
+      { name: "study_id", type: "string", comment: "Clinical trial or observational study identifier" },
+      { name: "participant_id", type: "string", comment: "Synthetic research participant identifier" },
+      { name: "screening_date", type: "date", comment: "Screening visit date" },
+      { name: "enrollment_date", type: "date", comment: "Participant enrollment date" },
+      { name: "consent_status", type: "string", comment: "Consent status for study participation" },
+      { name: "eligibility_status", type: "string", comment: "Eligible, not eligible, screen failed, or enrolled" },
+      { name: "study_arm", type: "string", comment: "Randomization or cohort assignment" },
+      { name: "visit_window", type: "string", comment: "Scheduled protocol visit window" },
+      { name: "lab_test_name", type: "string", comment: "Clinical laboratory test collected during study" },
+      { name: "lab_result_value", type: "decimal", comment: "Numeric lab value" },
+      { name: "lab_result_unit", type: "string", comment: "Lab result unit" },
+      { name: "adverse_event", type: "string", comment: "Reported adverse event" },
+      { name: "adverse_event_grade", type: "string", comment: "Adverse event severity grade" },
+      { name: "protocol_deviation", type: "string", comment: "Protocol deviation description" },
+      { name: "research_note", type: "text", comment: "Study coordinator note" }
+    ],
+    medical_professional: [
+      { name: "mrn", type: "string", comment: "Synthetic medical record number" },
+      { name: "patient_name", type: "string", comment: "Synthetic patient full name" },
+      { name: "date_of_birth", type: "date", comment: "Patient date of birth" },
+      { name: "age", type: "integer", comment: "Patient age in years" },
+      { name: "sex_at_birth", type: "string", comment: "Sex assigned at birth" },
+      { name: "visit_date", type: "date", comment: "Clinical encounter date" },
+      { name: "provider_name", type: "string", comment: "Treating provider" },
+      { name: "specialty", type: "string", comment: "Provider specialty" },
+      { name: "diagnosis_code", type: "string", comment: "ICD-10 diagnosis code" },
+      { name: "diagnosis_description", type: "string", comment: "Clinical diagnosis description" },
+      { name: "procedure_code", type: "string", comment: "CPT or procedure code" },
+      { name: "medication_name", type: "string", comment: "Medication prescribed or administered" },
+      { name: "lab_test", type: "string", comment: "Lab test ordered" },
+      { name: "lab_value", type: "decimal", comment: "Lab numeric result" },
+      { name: "systolic_bp", type: "integer", comment: "Systolic blood pressure" },
+      { name: "clinical_note", type: "text", comment: "Clinical note summary" }
+    ],
+    public_health: [
+      { name: "case_id", type: "string", comment: "Public health case identifier" },
+      { name: "jurisdiction", type: "string", comment: "County or reporting jurisdiction" },
+      { name: "report_date", type: "date", comment: "Date reported to public health" },
+      { name: "case_status", type: "string", comment: "Confirmed, probable, suspect, or under investigation" },
+      { name: "disease", type: "string", comment: "Reportable condition" },
+      { name: "pathogen", type: "string", comment: "Detected organism or virus" },
+      { name: "specimen_id", type: "string", comment: "Laboratory specimen identifier" },
+      { name: "specimen_type", type: "string", comment: "Specimen source or type" },
+      { name: "collection_date", type: "date", comment: "Specimen collection date" },
+      { name: "test_result", type: "string", comment: "Laboratory test result" },
+      { name: "hospitalized_flag", type: "boolean", comment: "Hospitalized yes/no flag" },
+      { name: "vaccination_status", type: "string", comment: "Vaccination status" },
+      { name: "outbreak_id", type: "string", comment: "Outbreak or cluster identifier" },
+      { name: "public_health_action", type: "string", comment: "Action taken by public health team" }
+    ]
+  };
+
+  DOM.fileInput.addEventListener("change", handleFileUpload);
+  DOM.generateBtn.addEventListener("click", generateMockData);
+  DOM.downloadCsvBtn.addEventListener("click", () => downloadData("csv"));
+  DOM.downloadJsonBtn.addEventListener("click", () => downloadData("json"));
+  DOM.downloadXlsxBtn.addEventListener("click", () => downloadData("xlsx"));
+  DOM.domainProfile.addEventListener("change", () => {
+    DOM.profileStat.textContent = profileLabel(DOM.domainProfile.value);
+    if (dataDictionary.length > 0) {
+      dataDictionary = dataDictionary.map(field => {
+        const inference = inferArchetype(field);
+        return { ...field, strategy: inference.strategy, meta: inference.meta || field.meta || null, isFloat: inference.isFloat || false, reason: inference.reason };
+      });
+      generatedData = [];
+      updateStats();
+      renderDictionaryPreview();
+      resetGeneratedViews();
+      showStatus("Profile changed. Field rules were refreshed using the selected healthcare context.", "info");
+    }
+  });
+
+  document.querySelectorAll(".sample-buttons button").forEach(button => {
+    button.addEventListener("click", () => {
+      const sampleName = button.getAttribute("data-sample");
+      loadSampleDictionary(sampleName);
+    });
+  });
+
+  document.querySelectorAll(".tab-btn").forEach(button => {
+    button.addEventListener("click", () => {
+      const tabId = button.getAttribute("data-tab");
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.remove("active"));
+      button.classList.add("active");
+      document.getElementById(tabId).classList.add("active");
+    });
+  });
+
+  function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const extension = file.name.split(".").pop().toLowerCase();
+    const reader = new FileReader();
+
+    reader.onload = loadEvent => {
+      try {
+        let rows = [];
+        if (extension === "json") {
+          const json = JSON.parse(loadEvent.target.result);
+          rows = Array.isArray(json) ? json : (json.fields || json.columns || json.schema || []);
+        } else {
+          if (!window.XLSX) throw new Error("The XLSX parser library did not load. Check your internet connection or use JSON.");
+          const data = new Uint8Array(loadEvent.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheetName = workbook.SheetNames[0];
+          rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: "" });
+        }
+
+        validateAndCleanDictionary(rows, file.name);
+      } catch (error) {
+        showStatus(`Error reading file: ${error.message}`, "error");
+      }
+    };
+
+    if (extension === "json") reader.readAsText(file);
+    else reader.readAsArrayBuffer(file);
+  }
+
+  function loadSampleDictionary(sampleName) {
+    const sample = SAMPLE_DICTIONARIES[sampleName];
+    if (!sample) return;
+    DOM.domainProfile.value = sampleName;
+    validateAndCleanDictionary(sample, `${sampleName}_sample_dictionary`);
+  }
+
+  function validateAndCleanDictionary(rows, sourceName = "uploaded dictionary") {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      showStatus("The dictionary appears empty or does not contain a recognizable fields/columns array.", "warning");
+      return;
+    }
+
+    const keys = Object.keys(rows[0] || {});
+    const nameKey = findKey(keys, ["name", "field", "field_name", "column", "column_name", "variable", "variable_name"]);
+    const commentKey = findKey(keys, ["comment", "description", "context", "notes", "definition", "label", "business_definition"]);
+    const typeKey = findKey(keys, ["type", "datatype", "data_type", "db_type", "format", "field_type"]);
+    const allowedValuesKey = findKey(keys, ["allowed_values", "values", "choices", "options", "enum", "permissible_values"]);
+
+    if (!nameKey) {
+      showStatus("Could not find a field-name column. Use a column named name, field, field_name, column, or column_name.", "error");
+      return;
+    }
+
+    dataDictionary = rows.map(row => {
+      const field = {
+        name: String(row[nameKey] ?? "").trim(),
+        comment: String(commentKey ? row[commentKey] ?? "" : "").trim(),
+        type: String(typeKey ? row[typeKey] ?? "" : "").trim(),
+        allowedValues: String(allowedValuesKey ? row[allowedValuesKey] ?? "" : "").trim()
+      };
+      const inference = inferArchetype(field);
+      field.strategy = inference.strategy;
+      field.meta = inference.meta || null;
+      field.isFloat = inference.isFloat || false;
+      field.reason = inference.reason;
+      return field;
+    }).filter(field => field.name.length > 0);
+
+    if (dataDictionary.length === 0) {
+      showStatus("No valid fields were found after parsing the dictionary.", "error");
+      return;
+    }
+
+    generatedData = [];
+    DOM.generateBtn.disabled = false;
+    disableDownloads(true);
+    updateStats();
+    renderDictionaryPreview();
+    resetGeneratedViews();
+    showStatus(`Loaded ${dataDictionary.length} fields from ${sourceName}. Review or edit the generated rule assignments, then generate mock data.`, "success");
+  }
+
+  function findKey(keys, candidates) {
+    const normalized = keys.map(key => ({ original: key, normalized: normalize(key) }));
+    for (const candidate of candidates) {
+      const direct = normalized.find(item => item.normalized === normalize(candidate));
+      if (direct) return direct.original;
+    }
+    for (const candidate of candidates) {
+      const partial = normalized.find(item => item.normalized.includes(normalize(candidate)));
+      if (partial) return partial.original;
+    }
+    return null;
+  }
+
+  function inferArchetype(field) {
+    const rawName = String(field.name || "");
+    const name = normalize(rawName);
+    const comment = String(field.comment || "").toLowerCase();
+    const type = String(field.type || "").toLowerCase();
+    const allowed = String(field.allowedValues || "");
+    const text = `${name} ${comment} ${type}`.toLowerCase();
+
+    const explicitOptions = parseOptions(allowed) || parseOptions(field.comment);
+    if (explicitOptions && explicitOptions.length > 0) {
+      return { strategy: "categorical", meta: explicitOptions, reason: "Explicit options found in dictionary" };
+    }
+
+    const isFloat = /decimal|double|float|currency|money|amount|charge|cost|payment|rate|pct|percent|percentage|ratio/.test(text);
+
+    if (/uuid|guid/.test(name)) return rule("uuid", "UUID/GUID field name");
+    if (/\bmrn\b|medicalrecord|chartnumber/.test(name)) return rule("mrn", "MRN or chart identifier");
+    if (/participant|subject|researchsubject/.test(name)) return rule("participant_id", "Research participant identifier");
+    if (/studyid|trialid|protocolid/.test(name)) return rule("study_id", "Study or trial identifier");
+    if (/caseid|caseidentifier|publichealthcase/.test(name)) return rule("case_id", "Public health case identifier");
+    if (/specimen|sample|isolate/.test(name) && /id|identifier|number/.test(name)) return rule("specimen_id", "Specimen/sample identifier");
+    if (/outbreak|cluster/.test(name) && /id|identifier|number/.test(name)) return rule("outbreak_id", "Outbreak or cluster identifier");
+    if (/claim/.test(name) && /id|identifier|number/.test(name)) return rule("claim_id", "Claim identifier");
+    if (/encounter|visit|admission/.test(name) && /id|identifier|number/.test(name)) return rule("encounter_id", "Encounter or visit identifier");
+    if (/facility|hospital|site|clinic/.test(name) && /id|identifier|number|code/.test(name)) return rule("facility_id", "Facility identifier");
+    if (/provider|practitioner|clinician|physician|doctor|npi/.test(name) && /id|identifier|number|npi/.test(name)) return rule("provider_id", "Provider identifier");
+    if (/patient|person|member|client/.test(name) && /id|identifier|number|key/.test(name)) return rule("patient_id", "Patient/member identifier");
+    if (/^id$|recordid|rowid|surrogatekey|primarykey|sequence/.test(name)) return rule("sequential_id", "General numeric or sequence identifier");
+
+    if (/firstname|first_name|fname|givenname/.test(name)) return rule("first_name", "First name pattern");
+    if (/lastname|last_name|lname|surname|familyname/.test(name)) return rule("last_name", "Last name pattern");
+    if (/patientname|patientfull|clientname|membername/.test(name)) return rule("patient_name", "Patient name pattern");
+    if (/providername|physicianname|doctorname|clinicianname|practitionername|staffname/.test(name)) return rule("provider_name", "Provider/staff name pattern");
+    if (/fullname|full_name|contactname|personname|^name$/.test(name) && /provider|physician|clinician|doctor|practitioner/.test(text)) return rule("provider_name", "Name with provider context");
+    if (/fullname|full_name|contactname|personname|^name$/.test(name)) return rule("full_name", "Generic full name");
+
+    if (/email|e_mail/.test(name)) return rule("email", "Email pattern");
+    if (/phone|telephone|mobile|cell|fax/.test(name)) return rule("phone", "Phone pattern");
+    if (/zip|zipcode|postal/.test(name)) return rule("zip", "ZIP/postal code pattern");
+    if (/county|jurisdictioncounty/.test(name)) return rule("county", "County pattern");
+    if (/state|province|region/.test(name)) return rule("state", "State/region pattern");
+    if (/city|town|locality/.test(name)) return rule("city", "City pattern");
+    if (/address|street|addr|mailing/.test(name)) return rule("address", "Address pattern");
+    if (/jurisdiction|healthdistrict|reportingarea|localhealth/.test(name)) return rule("jurisdiction", "Public health jurisdiction pattern");
+
+    if (/dob|dateofbirth|birthdate|birth_date/.test(name) || /date of birth|birth date/.test(comment)) return rule("dob", "Birth date pattern");
+    if (/age|yearsold/.test(name) || /age in years/.test(comment)) return rule("age", "Age pattern");
+    if (/sexatbirth|birthsex|sex_assigned|sexassigned|^sex$/.test(name)) return rule("sex", "Sex assigned at birth pattern");
+    if (/gender|genderidentity/.test(name)) return rule("gender", "Gender pattern");
+    if (/race/.test(name)) return rule("race", "Race pattern");
+    if (/ethnicity|hispanic/.test(name)) return rule("ethnicity", "Ethnicity pattern");
+    if (/language|preferredlanguage|interpreter/.test(name)) return rule("language", "Language pattern");
+
+    if (/payer|payor|insurance|insurer/.test(name)) return rule("payer", "Payer/insurance pattern");
+    if (/plantype|insuranceplan|coverage/.test(name)) return rule("plan_type", "Plan type pattern");
+    if (/claimstatus|billingstatus|denialstatus/.test(name)) return rule("claim_status", "Claim workflow status");
+    if (/authorization|priorauth|preauth/.test(name)) return rule("authorization_status", "Authorization workflow status");
+    if (/appointment|appt|schedule/.test(name) && /status|state/.test(text)) return rule("appointment_status", "Appointment workflow status");
+    if (/dischargedisposition|disposition/.test(name)) return rule("discharge_disposition", "Discharge disposition pattern");
+    if (/encountertype|visittype|caretype|setting/.test(name)) return rule("encounter_type", "Encounter type pattern");
+    if (/lengthofstay|los|daysinpatient|staydays/.test(name)) return rule("length_of_stay", "Length of stay pattern");
+    if (/charge|cost|price|payment|paid|allowedamount|reimbursement|revenue|balance|copay|coinsurance|deductible|amount/.test(name)) return rule("money", "Cost/charge/payment pattern", { isFloat: true });
+    if (/quality|measure|metric|kpi|performanceindicator/.test(name)) return rule("quality_measure", "Quality measure pattern");
+
+    if (/facility|hospital|medicalcenter|clinic|site|organization|orgname/.test(name)) return rule("facility", "Facility/site pattern");
+    if (/department|dept|ward|unit|icu|serviceunit/.test(name)) return rule("department", "Department/unit pattern");
+    if (/serviceline|programarea|careprogram/.test(name)) return rule("service_line", "Service line/program pattern");
+    if (/specialty|speciality|discipline/.test(name)) return rule("specialty", "Specialty pattern");
+
+    if (/icd|diagnosiscode|dxcode|diagcode/.test(name)) return rule("diagnosis_code", "Diagnosis code pattern");
+    if (/diagnosis|diag|condition|problem|chiefcomplaint|dxdescription|disease/.test(name) && !/public|reportable|communicable/.test(text)) return rule("diagnosis", "Clinical diagnosis pattern");
+    if (/cpt|hcpcs|procedurecode|proc_code/.test(name)) return rule("procedure_code", "Procedure code pattern");
+    if (/procedure|serviceprovided|clinicalservice|procdescription/.test(name)) return rule("procedure", "Procedure description pattern");
+    if (/rxnorm/.test(name)) return rule("rxnorm", "RxNorm code pattern");
+    if (/ndc/.test(name)) return rule("ndc", "NDC code pattern");
+    if (/medicationclass|drugclass|therapeuticclass/.test(name)) return rule("medication_class", "Medication class pattern");
+    if (/medication|medicine|drug|rx|prescription|pharmacy|therapeutic/.test(name)) return rule("medication", "Medication pattern");
+    if (/loinc/.test(name)) return rule("loinc", "LOINC code pattern");
+    if (/labtest|testname|analyte|ordername/.test(name)) return rule("lab_test", "Lab test pattern");
+    if (/labunit|resultunit|units/.test(name) && /lab|test|result/.test(text)) return rule("lab_unit", "Lab unit pattern");
+    if (/labvalue|resultvalue|numericresult|observationvalue|value/.test(name) && /lab|test|result|observation/.test(text)) return rule("lab_value", "Lab numeric value pattern", { isFloat: true });
+    if (/labresult|resultflag|interpretation|abnormalflag/.test(name)) return rule("lab_result", "Lab result/status pattern");
+    if (/systolic|diastolic|bloodpressure|heart_rate|heartrate|pulse|temperature|temp|spo2|oxygen|bmi|weight|height|respiratoryrate|vital/.test(name)) return rule("vital_sign", "Vital sign pattern", { isFloat: true });
+    if (/triage|acuity|esi/.test(name)) return rule("triage_acuity", "Triage acuity pattern");
+
+    if (/admissiondate|admitdate|dtadmit/.test(name)) return rule("admission_date", "Admission date pattern");
+    if (/dischargedate|dischdate|dtdisch/.test(name)) return rule("discharge_date", "Discharge date pattern");
+    if (/visitdate|encounterdate|appointmentdate|servicedate/.test(name)) return rule("visit_date", "Visit date pattern");
+    if (/collectiondate|collecteddate|specimendate|sampledate/.test(name)) return rule("collection_date", "Specimen collection date pattern");
+    if (/reportdate|reporteddate|notificationdate/.test(name)) return rule("report_date", "Report date pattern");
+    if (/enrollmentdate|enrolleddate|randomizationdate/.test(name)) return rule("enrollment_date", "Research enrollment date pattern");
+    if (/timestamp|datetime|createdat|updatedat|time_stamp/.test(name) || type.includes("timestamp")) return rule("datetime", "Timestamp data type or name");
+    if (/time|clock/.test(name) && !/date/.test(name)) return rule("time", "Time pattern");
+    if (/date|dt/.test(name) || /date|datetime|timestamp/.test(type)) return rule("date", "Date data type or field name");
+
+    if (/studyarm|arm|cohort|randomization|treatmentgroup/.test(name)) return rule("study_arm", "Study arm/cohort pattern");
+    if (/consent|informedconsent/.test(name)) return rule("consent_status", "Consent status pattern");
+    if (/eligibility|screeningstatus|screenstatus/.test(name)) return rule("eligibility_status", "Eligibility pattern");
+    if (/adverseevent|ae_description|eventdescription/.test(name)) return rule("adverse_event", "Adverse event pattern");
+    if (/aegrade|adverseeventgrade|toxicitygrade|severitygrade/.test(name)) return rule("ae_grade", "Adverse event grade pattern");
+    if (/protocoldeviation|deviation/.test(name)) return rule("protocol_deviation", "Protocol deviation pattern");
+    if (/irb|reviewboard/.test(name)) return rule("irb_status", "IRB status pattern");
+
+    if (/pathogen|organism|microbe|agent|virus|bacteria/.test(name)) return rule("pathogen", "Pathogen/organism pattern");
+    if (/reportablecondition|disease|conditionname|morbidity/.test(name)) return rule("disease", "Reportable disease pattern");
+    if (/casestatus|classification|caseclass/.test(name)) return rule("case_status", "Case status/classification pattern");
+    if (/specimentype|samplesource|specimensource/.test(name)) return rule("specimen_type", "Specimen type/source pattern");
+    if (/testresult|labstatus|detectionstatus/.test(name)) return rule("test_result", "Public health test result pattern");
+    if (/vaccination|immunization|vaxstatus|vaccine/.test(name)) return rule("vaccination_status", "Vaccination status pattern");
+    if (/publichealthaction|intervention|controlmeasure|followupaction/.test(name)) return rule("public_health_action", "Public health action pattern");
+    if (/hospitalized|death|deceased|icu|outbreakassociated|travelassociated|is_|has_|flag|flg|indicator|yesno/.test(name) || /boolean|bool|bit/.test(type)) return rule("boolean", "Boolean flag pattern");
+
+    if (/percent|percentage|pct|rate|ratio/.test(name)) return rule("percentage", "Percentage/rate pattern", { isFloat: true });
+    if (/number|count|cnt|quantity|qty|score|value|total|num|integer|int|float|double|decimal|numeric/.test(name) || /int|number|numeric|decimal|float|double/.test(type)) return rule("numeric", "Numeric data type or pattern", { isFloat });
+
+    if (/note|notes|comment|narrative|description|summary|text|remark|assessment|plan/.test(name) || /text|char|string|varchar|clob/.test(type)) {
+      const profile = DOM.domainProfile.value;
+      if (profile === "clinical_research") return rule("research_note", "Text field with research profile");
+      if (profile === "healthcare_admin") return rule("admin_note", "Text field with admin profile");
+      if (profile === "medical_professional") return rule("clinical_note", "Text field with clinical profile");
+      return rule("generic_text", "Text data type fallback");
+    }
+
+    return rule("placeholder", "No strong healthcare pattern detected");
+  }
+
+  function rule(strategy, reason, extras = {}) {
+    return { strategy, reason, ...extras };
+  }
+
+  function normalize(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  }
+
+  function parseOptions(value) {
+    if (!value) return null;
+    const stringValue = String(value);
+    const match = stringValue.match(/(?:options|choices|values|enum|allowed values|permissible values)\s*[:=]\s*([^\n\r]+)/i);
+    const raw = match ? match[1] : stringValue;
+    if (!/[|,;/]/.test(raw)) return null;
+    const options = raw
+      .split(/[|,;/]/)
+      .map(item => item.replace(/[\[\](){}'"`]/g, "").trim())
+      .filter(item => item.length > 0 && item.length <= 80);
+    return options.length > 1 && options.length <= 50 ? options : null;
+  }
+
+  window.updateFieldStrategy = (index, strategy) => {
+    if (!dataDictionary[index]) return;
+    dataDictionary[index].strategy = strategy;
+    dataDictionary[index].reason = "Manually selected by user";
+    if (strategy === "categorical" && (!dataDictionary[index].meta || dataDictionary[index].meta.length === 0)) {
+      const values = prompt("Enter comma-separated mock values for this categorical field:", "Active, Pending, Closed");
+      dataDictionary[index].meta = values ? values.split(",").map(value => value.trim()).filter(Boolean) : ["Active", "Pending", "Closed"];
+    }
+    renderDictionaryPreview();
+    updateStats();
+  };
+
+  function generateMockData() {
+    if (dataDictionary.length === 0) return;
+
+    const rowCount = clamp(parseInt(DOM.rowCountInput.value, 10) || 100, 1, 10000);
+    const seed = `${DOM.seedInput.value || "healthcare-demo"}|${DOM.domainProfile.value}|${rowCount}|${dataDictionary.map(f => `${f.name}:${f.strategy}`).join("|")}`;
+    rng = mulberry32(hashString(seed));
+
+    generatedData = [];
+    generationSummary = {};
+
+    for (let index = 0; index < rowCount; index++) {
+      const context = makeRowContext(index + 1);
+      const row = {};
+      dataDictionary.forEach(field => {
+        row[field.name] = generateValueByStrategy(field, index + 1, context);
+        generationSummary[field.strategy] = (generationSummary[field.strategy] || 0) + 1;
+      });
+      generatedData.push(row);
+    }
+
+    renderGeneratedPreview();
+    renderSummary();
+    updateStats();
+    disableDownloads(false);
+    activateTab("previewTab");
+    showStatus(`Generated ${generatedData.length.toLocaleString()} synthetic healthcare records. Preview shows the first 25 rows; downloads include the full dataset.`, "success");
+  }
+
+  function makeRowContext(index) {
+    const profile = DOM.domainProfile.value;
+    const firstName = randomChoice(POOL.firstNames);
+    const lastName = randomChoice(POOL.lastNames);
+    const age = randomInt(0, 94);
+    const dob = dateYearsAgo(age, randomInt(0, 364));
+    const admissionDate = randomDateWithinRange();
+    const los = randomWeighted([[0, 20], [1, 26], [2, 17], [3, 11], [4, 8], [5, 6], [7, 5], [10, 4], [14, 2], [21, 1]]);
+    const dischargeDate = addDays(admissionDate, los);
+    const collectionDate = addDays(admissionDate, randomInt(-3, 3));
+    const reportDate = addDays(collectionDate, randomInt(0, 7));
+    const enrollmentDate = randomDateWithinRange();
+    const diagnosis = profile === "public_health" ? randomChoice(POOL.diseases) : randomChoice(POOL.diagnoses);
+    const procedure = randomChoice(POOL.procedures);
+    const medication = randomChoice(POOL.medications);
+    const lab = randomChoice(POOL.labTests);
+    const pathogenIndex = randomInt(0, POOL.pathogens.length - 1);
+
+    return {
+      index,
+      profile,
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      age,
+      dob,
+      sex: randomChoice(POOL.sex),
+      gender: randomChoice(POOL.gender),
+      race: randomChoice(POOL.race),
+      ethnicity: randomChoice(POOL.ethnicity),
+      language: randomChoice(POOL.language),
+      email: `${firstName}.${lastName}${randomInt(10, 99)}@${randomChoice(POOL.domains)}`.toLowerCase(),
+      phone: `(555) ${randomInt(200, 999)}-${String(randomInt(0, 9999)).padStart(4, "0")}`,
+      address: `${randomInt(100, 9999)} ${randomChoice(POOL.streets)}`,
+      city: randomChoice(POOL.cities),
+      county: randomChoice(POOL.counties),
+      state: randomChoice(POOL.states),
+      zip: String(randomInt(85001, 86556)),
+      patientId: `PAT-${String(index).padStart(7, "0")}`,
+      mrn: `MRN-${randomInt(1000000, 9999999)}`,
+      encounterId: `ENC-${formatYear(admissionDate)}-${String(index).padStart(6, "0")}`,
+      claimId: `CLM-${formatYear(admissionDate)}-${randomInt(10000000, 99999999)}`,
+      providerId: `NPI-${randomInt(1000000000, 1999999999)}`,
+      facilityId: `FAC-${randomInt(1000, 9999)}`,
+      studyId: `STUDY-${randomChoice(["CARD", "ID", "ONC", "PH", "DM", "RESP"])}-${randomInt(100, 999)}`,
+      participantId: `SUBJ-${String(index).padStart(5, "0")}`,
+      caseId: `PH-${formatYear(reportDate)}-${String(index).padStart(6, "0")}`,
+      specimenId: `SPC-${formatYear(collectionDate)}-${randomInt(100000, 999999)}`,
+      outbreakId: `OB-${formatYear(reportDate)}-${randomInt(100, 999)}`,
+      facility: randomChoice(POOL.facilities),
+      department: randomChoice(POOL.departments),
+      serviceLine: randomChoice(POOL.serviceLines),
+      specialty: randomChoice(POOL.specialties),
+      providerName: randomChoice(POOL.providerNames),
+      payer: randomChoice(POOL.payers),
+      planType: randomChoice(POOL.planTypes),
+      diagnosis,
+      procedure,
+      medication,
+      lab,
+      admissionDate,
+      dischargeDate,
+      visitDate: admissionDate,
+      collectionDate,
+      reportDate,
+      enrollmentDate,
+      lengthOfStay: los,
+      pathogen: POOL.pathogens[pathogenIndex],
+      disease: POOL.diseases[pathogenIndex] || randomChoice(POOL.diseases)
+    };
+  }
+
+  function generateValueByStrategy(field, index, context) {
+    const name = normalize(field.name);
+    switch (field.strategy) {
+      case "categorical": return field.meta && field.meta.length ? randomChoice(field.meta) : randomChoice(["Active", "Pending", "Closed"]);
+      case "generic_text": return randomChoice(POOL.genericNotes);
+      case "clinical_note": return randomChoice(POOL.clinicalNotes);
+      case "admin_note": return randomChoice(POOL.adminNotes);
+      case "research_note": return randomChoice(POOL.researchNotes);
+      case "patient_id": return context.patientId;
+      case "mrn": return context.mrn;
+      case "encounter_id": return context.encounterId;
+      case "claim_id": return context.claimId;
+      case "provider_id": return context.providerId;
+      case "facility_id": return context.facilityId;
+      case "study_id": return context.studyId;
+      case "participant_id": return context.participantId;
+      case "case_id": return context.caseId;
+      case "specimen_id": return context.specimenId;
+      case "outbreak_id": return context.outbreakId;
+      case "uuid": return uuid();
+      case "sequential_id": return index;
+      case "first_name": return context.firstName;
+      case "last_name": return context.lastName;
+      case "full_name": return context.fullName;
+      case "patient_name": return context.fullName;
+      case "provider_name": return context.providerName;
+      case "email": return context.email;
+      case "phone": return context.phone;
+      case "address": return context.address;
+      case "city": return context.city;
+      case "county": return context.county;
+      case "state": return context.state;
+      case "zip": return context.zip;
+      case "age": return context.age;
+      case "dob": return formatDate(context.dob);
+      case "sex": return context.sex;
+      case "gender": return context.gender;
+      case "race": return context.race;
+      case "ethnicity": return context.ethnicity;
+      case "language": return context.language;
+      case "payer": return context.payer;
+      case "plan_type": return context.planType;
+      case "claim_status": return randomChoice(POOL.claimStatuses);
+      case "authorization_status": return randomChoice(POOL.authStatuses);
+      case "appointment_status": return randomChoice(POOL.appointmentStatuses);
+      case "discharge_disposition": return randomChoice(POOL.dischargeDispositions);
+      case "encounter_type": return randomChoice(POOL.encounterTypes);
+      case "length_of_stay": return context.lengthOfStay;
+      case "money": return moneyValue(name);
+      case "quality_measure": return randomChoice(POOL.qualityMeasures);
+      case "facility": return context.facility;
+      case "department": return context.department;
+      case "service_line": return context.serviceLine;
+      case "specialty": return context.specialty;
+      case "diagnosis_code": return context.diagnosis.code || randomChoice(POOL.diagnoses).code;
+      case "diagnosis": return context.diagnosis.text || context.diagnosis;
+      case "procedure_code": return context.procedure.code;
+      case "procedure": return context.procedure.text;
+      case "medication": return context.medication.name;
+      case "medication_class": return context.medication.klass;
+      case "rxnorm": return context.medication.rxnorm;
+      case "ndc": return context.medication.ndc;
+      case "lab_test": return context.lab.name;
+      case "loinc": return context.lab.loinc;
+      case "lab_value": return labValue(context.lab);
+      case "lab_unit": return context.lab.unit;
+      case "lab_result": return context.lab.unit === "result" ? randomChoice(["Detected", "Not detected", "Pending", "Inconclusive"]) : randomChoice(POOL.labResults);
+      case "vital_sign": return vitalValue(name);
+      case "triage_acuity": return randomChoice(POOL.triage);
+      case "admission_date": return formatDate(context.admissionDate);
+      case "discharge_date": return formatDate(context.dischargeDate);
+      case "visit_date": return formatDate(context.visitDate);
+      case "collection_date": return formatDate(context.collectionDate);
+      case "report_date": return formatDate(context.reportDate);
+      case "enrollment_date": return formatDate(context.enrollmentDate);
+      case "date": return formatDate(randomDateWithinRange());
+      case "datetime": return `${formatDate(randomDateWithinRange())}T${timeValue()}`;
+      case "time": return timeValue();
+      case "study_arm": return randomChoice(POOL.studyArms);
+      case "consent_status": return randomChoice(POOL.consentStatuses);
+      case "eligibility_status": return randomChoice(POOL.eligibilityStatuses);
+      case "adverse_event": return randomChoice(POOL.adverseEvents);
+      case "ae_grade": return randomChoice(POOL.aeGrades);
+      case "protocol_deviation": return randomChoice(POOL.protocolDeviations);
+      case "irb_status": return randomChoice(POOL.irbStatuses);
+      case "pathogen": return context.pathogen;
+      case "disease": return context.disease;
+      case "case_status": return randomChoice(POOL.caseStatuses);
+      case "specimen_type": return randomChoice(POOL.specimenTypes);
+      case "test_result": return randomChoice(POOL.testResults);
+      case "vaccination_status": return randomChoice(POOL.vaccinationStatuses);
+      case "jurisdiction": return context.county;
+      case "public_health_action": return randomChoice(POOL.publicHealthActions);
+      case "boolean": return rng() > 0.5 ? "True" : "False";
+      case "numeric": return field.isFloat ? randomFloat(0, 250, 2) : randomInt(0, 250);
+      case "percentage": return randomFloat(0, 100, 1);
+      case "placeholder":
+      default: return `SYN-${String(index).padStart(6, "0")}-${randomInt(100, 999)}`;
+    }
+  }
+
+  function moneyValue(name) {
+    if (/copay|coinsurance/.test(name)) return randomFloat(0, 125, 2);
+    if (/deductible|allowed|paid|payment|reimbursement/.test(name)) return randomFloat(50, 6000, 2);
+    if (/charge|cost|price|total|balance|amount/.test(name)) return randomFloat(100, 25000, 2);
+    return randomFloat(25, 9000, 2);
+  }
+
+  function labValue(lab) {
+    if (lab.unit === "result") return randomChoice(["Detected", "Not detected", "Indeterminate"]);
+    return randomFloat(lab.min, lab.max, lab.decimals);
+  }
+
+  function vitalValue(name) {
+    if (/systolic/.test(name)) return randomInt(95, 178);
+    if (/diastolic/.test(name)) return randomInt(55, 108);
+    if (/heart|pulse/.test(name)) return randomInt(52, 128);
+    if (/temp|temperature/.test(name)) return randomFloat(96.4, 103.2, 1);
+    if (/spo2|oxygen/.test(name)) return randomInt(88, 100);
+    if (/bmi/.test(name)) return randomFloat(18.5, 44.5, 1);
+    if (/weight/.test(name)) return randomFloat(45, 160, 1);
+    if (/height/.test(name)) return randomFloat(145, 198, 1);
+    if (/resp/.test(name)) return randomInt(10, 28);
+    return randomFloat(0, 200, 1);
+  }
+
+  function renderDictionaryPreview() {
+    const rows = dataDictionary.map((field, index) => {
+      const select = `<select class="strategy-select" onchange="window.updateFieldStrategy(${index}, this.value)">${STRATEGY_OPTIONS.map(option => `<option value="${option.value}" ${field.strategy === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}</select>`;
+      const metaBadge = field.meta && field.meta.length ? `<div class="small">Options: ${escapeHtml(field.meta.slice(0, 6).join(", "))}${field.meta.length > 6 ? "…" : ""}</div>` : "";
+      return `<tr>
+        <td><strong>${escapeHtml(field.name)}</strong></td>
+        <td><span class="badge blue">${escapeHtml(field.type || "N/A")}</span></td>
+        <td class="wide-cell">${escapeHtml(field.comment || "—")}</td>
+        <td class="rule-cell">${select}${metaBadge}<div class="small">${escapeHtml(field.reason || "")}</div></td>
+      </tr>`;
+    }).join("");
+
+    DOM.schemaContainer.innerHTML = `<table>
+      <thead><tr><th>Field name</th><th>Type</th><th>Dictionary comment</th><th>Mock-data rule</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  function renderGeneratedPreview() {
+    if (generatedData.length === 0) {
+      resetGeneratedViews();
+      return;
+    }
+
+    const headers = Object.keys(generatedData[0]);
+    const head = headers.map(header => `<th>${escapeHtml(header)}</th>`).join("");
+    const body = generatedData.slice(0, 25).map(row => `<tr>${headers.map(header => `<td>${escapeHtml(String(row[header] ?? ""))}</td>`).join("")}</tr>`).join("");
+    const overflow = generatedData.length > 25 ? `<div class="small" style="padding:12px;text-align:center;background:#f8fafc;">Showing 25 preview rows of ${generatedData.length.toLocaleString()} generated rows. Download files include all rows.</div>` : "";
+
+    DOM.previewContainer.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>${overflow}`;
+  }
+
+  function renderSummary() {
+    const ordered = Object.entries(generationSummary).sort((a, b) => b[1] - a[1]);
+    const rows = ordered.map(([strategy, count]) => `<li><span class="badge green">${escapeHtml(strategy)}</span> generated ${count.toLocaleString()} values</li>`).join("");
+    const profile = profileLabel(DOM.domainProfile.value);
+    DOM.summaryContainer.className = "";
+    DOM.summaryContainer.innerHTML = `
+      <h3 style="margin-top:0;">Generation summary</h3>
+      <ul class="summary-list">
+        <li><strong>Profile:</strong> ${escapeHtml(profile)}</li>
+        <li><strong>Rows:</strong> ${generatedData.length.toLocaleString()}</li>
+        <li><strong>Fields:</strong> ${dataDictionary.length.toLocaleString()}</li>
+        <li><strong>Date range:</strong> ${escapeHtml(DOM.startDateInput.value)} to ${escapeHtml(DOM.endDateInput.value)}</li>
+        <li><strong>Seed:</strong> <span class="mono">${escapeHtml(DOM.seedInput.value || "healthcare-demo")}</span></li>
+      </ul>
+      <h4>Rule usage</h4>
+      <ul class="summary-list">${rows}</ul>
+    `;
+  }
+
+  function resetGeneratedViews() {
+    DOM.previewContainer.innerHTML = `<div class="empty"><h3>No generated data yet</h3><p>Load a dictionary, review field rules, and click Generate Mock Data.</p></div>`;
+    DOM.summaryContainer.className = "empty";
+    DOM.summaryContainer.innerHTML = `<h3>No summary available yet</h3><p>A summary will appear after generation.</p>`;
+    DOM.rowCountStat.textContent = "0";
+    disableDownloads(true);
+  }
+
+  function updateStats() {
+    DOM.fieldCountStat.textContent = dataDictionary.length.toLocaleString();
+    DOM.rowCountStat.textContent = generatedData.length.toLocaleString();
+    DOM.profileStat.textContent = profileLabel(DOM.domainProfile.value);
+    DOM.editableStat.textContent = dataDictionary.length.toLocaleString();
+  }
+
+  function profileLabel(value) {
+    return {
+      healthcare_admin: "Admin",
+      clinical_research: "Research",
+      medical_professional: "Clinical",
+      public_health: "Public health",
+      mixed: "Mixed"
+    }[value] || "Mixed";
+  }
+
+  function showStatus(message, type = "info") {
+    DOM.statusBox.textContent = message;
+    DOM.statusBox.className = `status show ${type}`;
+  }
+
+  function disableDownloads(disabled) {
+    DOM.downloadCsvBtn.disabled = disabled;
+    DOM.downloadJsonBtn.disabled = disabled;
+    DOM.downloadXlsxBtn.disabled = disabled;
+  }
+
+  function activateTab(tabId) {
+    document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId));
+    document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.toggle("active", panel.id === tabId));
+  }
+
+  function downloadData(format) {
+    if (generatedData.length === 0) return;
+    const baseName = `synthetic_healthcare_data_${new Date().toISOString().slice(0, 10)}`;
+
+    if (format === "json") {
+      downloadBlob(JSON.stringify(generatedData, null, 2), `${baseName}.json`, "application/json");
+      return;
+    }
+
+    if (format === "csv") {
+      const headers = Object.keys(generatedData[0]);
+      const lines = [headers.map(csvEscape).join(",")];
+      generatedData.forEach(row => lines.push(headers.map(header => csvEscape(row[header])).join(",")));
+      downloadBlob(lines.join("\n"), `${baseName}.csv`, "text/csv");
+      return;
+    }
+
+    if (format === "xlsx") {
+      if (!window.XLSX) {
+        showStatus("XLSX export requires the SheetJS library to load. Try CSV or JSON.", "warning");
+        return;
+      }
+      const worksheet = XLSX.utils.json_to_sheet(generatedData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Synthetic_Data");
+      XLSX.writeFile(workbook, `${baseName}.xlsx`);
+    }
+  }
+
+  function downloadBlob(content, filename, mimeType) {
+    const blob = new Blob([content], { type: `${mimeType};charset=utf-8;` });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  function csvEscape(value) {
+    const stringValue = String(value ?? "");
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+
+  function randomChoice(array) { return array[Math.floor(rng() * array.length)]; }
+  function randomInt(min, max) { return Math.floor(rng() * (max - min + 1)) + min; }
+  function randomFloat(min, max, decimals = 2) { return Number((rng() * (max - min) + min).toFixed(decimals)); }
+  function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
+
+  function randomWeighted(pairs) {
+    const total = pairs.reduce((sum, pair) => sum + pair[1], 0);
+    let roll = rng() * total;
+    for (const [value, weight] of pairs) {
+      roll -= weight;
+      if (roll <= 0) return value;
+    }
+    return pairs[pairs.length - 1][0];
+  }
+
+  function randomDateWithinRange() {
+    const fallbackStart = new Date("2024-01-01T00:00:00");
+    const fallbackEnd = new Date("2026-12-31T00:00:00");
+    const start = DOM.startDateInput.value ? new Date(`${DOM.startDateInput.value}T00:00:00`) : fallbackStart;
+    const end = DOM.endDateInput.value ? new Date(`${DOM.endDateInput.value}T00:00:00`) : fallbackEnd;
+    const min = Math.min(start.getTime(), end.getTime());
+    const max = Math.max(start.getTime(), end.getTime());
+    return new Date(min + Math.floor(rng() * (max - min + 1)));
+  }
+
+  function dateYearsAgo(years, dayOffset) {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - years);
+    date.setDate(date.getDate() - dayOffset);
+    return date;
+  }
+
+  function addDays(date, days) {
+    const copy = new Date(date.getTime());
+    copy.setDate(copy.getDate() + days);
+    return copy;
+  }
+
+  function formatDate(date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  function formatYear(date) {
+    return String(date.getFullYear());
+  }
+
+  function timeValue() {
+    return `${String(randomInt(0, 23)).padStart(2, "0")}:${String(randomInt(0, 59)).padStart(2, "0")}:${String(randomInt(0, 59)).padStart(2, "0")}`;
+  }
+
+  function uuid() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, char => {
+      const r = Math.floor(rng() * 16);
+      const v = char === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  function hashString(input) {
+    let hash = 2166136261;
+    for (let i = 0; i < input.length; i++) {
+      hash ^= input.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function mulberry32(seed) {
+    return function() {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  updateStats();
+})();
+</script>
+</body>
+</html>
